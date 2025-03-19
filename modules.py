@@ -34,7 +34,9 @@ class LinearReLUMLP(Module):
         return loss_function(y_hat, y)
 
     def configure_optimizers(self):
-        return optim.SGD(self.parameters(), lr=self.learning_rate, weight_decay=0.01)
+        # return optim.SGD(self.parameters(), lr=self.learning_rate, weight_decay=0.01)
+
+        return optim.Adam(self.parameters(), lr=self.learning_rate)
 
     def initialize_parameters(self, module):
 
@@ -53,6 +55,5 @@ class LinearReLUMLP(Module):
     def validation_step(self, batch):
         y_hat = self(*batch[:-1])
         l = self.loss(y_hat, batch[-1])
-        print(f"Validation loss: {l:.2f}")
         return l
 

@@ -22,29 +22,27 @@ class DiabetesDataset(Dataset):
     val_size: float = 0.2
     manual_seed: int = 42
     diabetes_dataset = load_diabetes()
-    features = diabetes_dataset["data"]  # type: ignore
+
+    # Only load relevant features
+    features = diabetes_dataset["data"][:, [0, 2, 3, 4, 5, 6, 7, 8, 9]]  # type: ignore
     labels = diabetes_dataset["target"]  # type: ignore
     feature_names = diabetes_dataset["feature_names"] # type: ignore
-
-
+    
     def __attrs_post_init__(self):
+        self.features = self.features - self.features.mean(axis=0) / self.features.std(axis=0)
 
-        desired_split = [1-self.val_size, self.val_size]
-        self.train_dataset, self.val_dataset = torch.utils.data.random_split(
-            self, desired_split, generator=torch.Generator().manual_seed(self.manual_seed)
-        )
-             
     def __len__(self) -> int:
         return len(self.features)
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         return (torch.tensor(self.features[idx], dtype=torch.float), 
-                torch.log(torch.tensor(self.labels[idx], dtype=torch.float)))
+                torch.tensor(self.labels[idx], dtype=torch.float))
 
     def get_dataloader(self, train):
-        
-        data = self.train_dataset if train else self.val_dataset
-        return torch.utils.data.DataLoader(data, self.batch_size, shuffle=train)
+        i = slice(0, 350) if train else slice(350, None)
+        X = torch.tensor(self.features, dtype=torch.float32)
+        y = torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1)
+        return self.get_tensorloader((X, y), train, i)
 
     def train_dataloader(self):
         return self.get_dataloader(train=True)

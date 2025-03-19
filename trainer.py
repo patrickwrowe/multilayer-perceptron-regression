@@ -56,7 +56,7 @@ class Trainer():
     def fit_epoch(self):
         """Fit one epoch of the model."""
         print("\n EPOCH \n")
-        
+
         self.model.train()  # Set the model to training mode
         train_loss = 0.0
 
@@ -65,14 +65,13 @@ class Trainer():
 
             batch = self.prepare_batch(batch)  # Move batch to the correct device
 
-            print(f"Batch: {(batch[0].shape, batch[1].shape)}")
             self.optim.zero_grad()  # Reset gradients
             loss = self.model.training_step(batch)  # Compute loss
             loss.backward()  # Backpropagation
             
-            # Print the gradients 
-            for name, param in self.model.named_parameters():
-                print(name, param.grad)
+            # # Print the gradients 
+            # for name, param in self.model.named_parameters():
+            #     print(name, param.grad)
 
             self.optim.step()  # Update model parameters
             train_loss += loss.item()
