@@ -1,17 +1,32 @@
 from typing import Optional
 import attrs
+from pandas.core.dtypes.cast import _maybe_box_and_unbox_datetimelike
 import torch
 from torch.utils import data
 from torch.utils.data import DataLoader
 from torch.nn import Module
+from torch.optim.optimizer import Optimizer
 
 
-@attrs.define()
+@attrs.define(slots=False)
 class Trainer():
 
     max_epochs: int
-    data: Optional[DataLoader] = None
-    model: Optional[Module] = None
+
+    # Model paramaters
+    model: Module = attrs.field(init=False)
+    optim: Optimizer = attrs.field(init=False)
+
+    # Data Parameters
+    train_dataloader: DataLoader = attrs.field(init=False)
+    val_dataloader: DataLoader = attrs.field(init=False)
+    num_train_batches: int = attrs.field(init=False)
+    num_val_batches: int = attrs.field(init=False)
+
+    # Counters 
+    epoch: int = attrs.field(init=False)
+    train_batch_idx: int = attrs.field(init=False)
+    val_batch_idx: int = attrs.field(init=False)
 
     def prepare_data(self, data):
         self.train_dataloader = data.train_dataloader()
@@ -22,7 +37,11 @@ class Trainer():
 
     def prepare_model(self, model):
         model.trainer = self
+        # Attempt to put the model on the GPU if one is available
+        device = try_gpu()
+        model.to(device) 
         self.model = model
+        print(f"Model running on {device}")
 
     def fit(self, model, data):
         self.prepare_data(data)
@@ -38,10 +57,10 @@ class Trainer():
         assert self.model  # Ensure correct initialization
 
         self.model.train()  # Put model in training mode
-        for batch in self.train_dataloader():
+        for batch in self.train_dataloader:
             loss = self.model.training_step(self.prepare_batch(batch))
             
-            self.optim.zero_grad_()
+            self.optim.zero_grad()
             with torch.no_grad():
                 loss.backward()
                 self.optim.step()
@@ -58,9 +77,9 @@ class Trainer():
             self.val_batch_idx += 1
 
     def prepare_batch(self, batch):
-        # If we end up training with GPUs, send batch to GPU here. 
-        device = try_gpu()
-        return batch.to(device) 
+        # Try sending the batch to the GPU if possible
+        batch = [b.to(try_gpu()) for b in batch]
+        return batch
 
 def try_gpu():
     """Return gpu if exists, otherwise return cpu"""
