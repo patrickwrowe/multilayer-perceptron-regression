@@ -54,27 +54,44 @@ class Trainer():
             self.fit_epoch()
 
     def fit_epoch(self):
-        assert self.model  # Ensure correct initialization
-
-        self.model.train()  # Put model in training mode
-        for batch in self.train_dataloader:
-            loss = self.model.training_step(self.prepare_batch(batch))
-            
-            self.optim.zero_grad()
-            with torch.no_grad():
-                loss.backward()
-                self.optim.step()
-
-            self.train_batch_idx += 1
-
-        if self.val_dataloader is None:
-            return
+        """Fit one epoch of the model."""
+        print("\n EPOCH \n")
         
-        self.model.eval()
-        for batch in self.val_dataloader:
-            with torch.no_grad():
-                self.model.validation_step(self.prepare_batch(batch))
-            self.val_batch_idx += 1
+        self.model.train()  # Set the model to training mode
+        train_loss = 0.0
+
+        # Training loop
+        for self.train_batch_idx, batch in enumerate(self.train_dataloader):
+
+            batch = self.prepare_batch(batch)  # Move batch to the correct device
+
+            print(f"Batch: {(batch[0].shape, batch[1].shape)}")
+            self.optim.zero_grad()  # Reset gradients
+            loss = self.model.training_step(batch)  # Compute loss
+            loss.backward()  # Backpropagation
+            
+            # Print the gradients 
+            for name, param in self.model.named_parameters():
+                print(name, param.grad)
+
+            self.optim.step()  # Update model parameters
+            train_loss += loss.item()
+
+        avg_train_loss = train_loss / self.num_train_batches
+        print(f"Epoch {self.epoch + 1}/{self.max_epochs}, Training Loss: {avg_train_loss:.4f}")
+
+        # Validation loop
+        if self.num_val_batches > 0:
+            self.model.eval()  # Set the model to evaluation mode
+            val_loss = 0.0
+            with torch.no_grad():  # Disable gradient computation for validation
+                for self.val_batch_idx, batch in enumerate(self.val_dataloader):
+                    batch = self.prepare_batch(batch)  # Move batch to the correct device
+                    loss = self.model.validation_step(batch)  # Compute validation loss
+                    val_loss += loss.item()
+
+            avg_val_loss = val_loss / self.num_val_batches
+            print(f"Epoch {self.epoch + 1}/{self.max_epochs}, Validation Loss: {avg_val_loss:.4f}")
 
     def prepare_batch(self, batch):
         # Try sending the batch to the GPU if possible
