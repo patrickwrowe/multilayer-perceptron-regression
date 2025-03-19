@@ -3,7 +3,7 @@ import attrs
 import torch
 from torch.utils import data
 from torch.utils.data import DataLoader
-from torch import Module
+from torch.nn import Module
 
 
 @attrs.define()
@@ -35,6 +35,8 @@ class Trainer():
             self.fit_epoch()
 
     def fit_epoch(self):
+        assert self.model  # Ensure correct initialization
+
         self.model.train()  # Put model in training mode
         for batch in self.train_dataloader():
             loss = self.model.training_step(self.prepare_batch(batch))
@@ -57,4 +59,11 @@ class Trainer():
 
     def prepare_batch(self, batch):
         # If we end up training with GPUs, send batch to GPU here. 
-        return batch 
+        device = try_gpu()
+        return batch.to(device) 
+
+def try_gpu():
+    """Return gpu if exists, otherwise return cpu"""
+    if torch.cuda.device_count() >= 1:
+        return torch.device('cuda')
+    return torch.device('cpu')

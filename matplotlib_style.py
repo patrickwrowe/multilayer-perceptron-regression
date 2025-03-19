@@ -71,7 +71,10 @@ def setup_matplotlib_environment() -> None:
     plt.rcParams["axes.linewidth"] = 3.0
 
     # Line Colours
-    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", theme_categorical_pastel)
+    plt.rcParams["axes.prop_cycle"] = plt.cycler(  # type: ignore
+        "color", 
+        theme_categorical_pastel
+    ) 
 
     # Markers
     plt.rcParams["lines.markersize"] = 10
