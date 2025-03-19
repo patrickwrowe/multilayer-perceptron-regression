@@ -32,7 +32,9 @@ class DiabetesDataset(Dataset):
                 torch.tensor(self.labels[idx], dtype=torch.float))
 
     def get_dataloader(self, train):
-        raise NotImplementedError
+        if train:
+            return torch.utils.data.DataLoader(self.train_dataset, self.batch_size, shuffle=train)
+        return torch.utils.data.DataLoader(self.val_dataset, self.batch_size, shuffle=train)
 
     def train_dataloader(self):
         return self.get_dataloader(train=True)
