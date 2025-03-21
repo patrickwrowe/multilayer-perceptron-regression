@@ -1,5 +1,7 @@
+from pandas.compat import F
+from scipy.sparse import data
 from sklearn.datasets import load_diabetes
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, dataset
 import torch
 import torch.utils.data
 import attrs
@@ -19,7 +21,7 @@ class LinearReLUMLPDataSet(Dataset):
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError
 
-    def get_dataloader(self, train):
+    def get_dataloader(self, train: bool):
         raise NotImplementedError
 
     def train_dataloader(self):
@@ -35,6 +37,41 @@ class LinearReLUMLPDataSet(Dataset):
 
     def get_data(self):
         raise NotImplementedError
+
+@attrs.define()
+class KFoldDataSet(Dataset):
+    """Dataset for K-Fold Cross Validation. Takes the train_dataloader of the parent
+    dataset and splits it into k folds"""
+
+    dataset: LinearReLUMLPDataSet
+    train_subset: torch.utils.data.Subset
+    val_subset: torch.utils.data.Subset
+    k: int
+    n: int
+
+    @classmethod
+    def from_dataset(cls, dataset: LinearReLUMLPDataSet, k: int, n: int):
+        def get_indices(k: int, n: int, train=True):      
+            assert n <= k, "n must be less than or equal to k to fetch nth fold of a k-fold split."
+
+            fold_size = len(dataset) // k
+            all_indices = list(range(len(dataset)))
+            
+            if train:
+                indices = all_indices[0 : n * fold_size] + all_indices[(n+1) * fold_size : -1]
+            else: 
+                indices = all_indices[n * fold_size : (n+1) * fold_size]
+            
+            return indices
+
+        train_subset = torch.utils.data.Subset(dataset, indices=get_indices(k=k, n=n, train=True)) 
+        val_subset = torch.utils.data.Subset(dataset, indices=get_indices(k=k, n=n, train=False))
+
+        return cls(dataset=dataset, train_subset=train_subset, val_subset=val_subset, k=k, n=n)
+
+    def get_dataloader(self, train):
+        dataloader = self.train_subset if train else self.val_subset
+        return dataloader
 
 
 @attrs.define()
@@ -152,8 +189,8 @@ class KaggleHouse(LinearReLUMLPDataSet):
         # Logarithm of prices
         tensors = (
             get_tensor(data.drop(columns=[label])),  # X
-            torch.log(get_tensor(data[label])).reshape((-1, 1)),
-        )  # Y
+            torch.log(get_tensor(data[label])).reshape((-1, 1)), # Y
+        )  
         return self.get_tensorloader(tensors, train)
 
     def preprocess(self):

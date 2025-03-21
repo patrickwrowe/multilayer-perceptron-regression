@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
-
+import numpy as np
 
 @attrs.define(slots=False)
 class Trainer:
@@ -112,10 +112,19 @@ class Trainer:
             }
         )
 
+        self.print_training_status()
+
     def prepare_batch(self, batch):
         # Try sending the batch to the GPU if possible
         batch = [b.to(try_gpu()) for b in batch]
         return batch
+
+    def print_training_status(self):
+        train_loss = self.metadata["training_epochs"][-1]["avg_train_loss"]
+        val_loss = self.metadata["training_epochs"][-1]["avg_val_loss"] 
+        val_loss = val_loss if val_loss is not None else np.NaN
+
+        print(f"Epoch {self.epoch + 1}/{self.max_epochs}: Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}", end="\r")
 
 
 def try_gpu():

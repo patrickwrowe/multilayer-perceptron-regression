@@ -1,19 +1,21 @@
 from modules import Module
 from dataloader import LinearReLUMLPDataSet
-from trainer import Trainer
 import numpy as np
 
 
-def get_validation_predictions(
-    model: Module, dataset: LinearReLUMLPDataSet
+def get_model_predictions(
+    model: Module, dataset: LinearReLUMLPDataSet, train=False
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Get the predictions of the model on the validation dataset.
     """
+
+    data = dataset.train_dataloader() if train else dataset.val_dataloader()
+
     y_hat = np.array([])
     y = np.array([])
 
-    for batch in dataset.val_dataloader():
+    for batch in data:
         y_hat = np.append(y_hat, model.net(batch[0]).detach().numpy())
         y = np.append(y, batch[-1])
 
