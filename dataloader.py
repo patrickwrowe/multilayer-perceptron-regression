@@ -6,6 +6,7 @@ import attrs
 import pandas as pd
 import os
 
+
 @attrs.define()
 class LinearReLUMLPDataSet(Dataset):
     """Abstract base class for datasets used in the LinearReLUMLP model"""
@@ -30,18 +31,18 @@ class LinearReLUMLPDataSet(Dataset):
     def get_tensorloader(self, tensors, train, indices=slice(0, None)):
         tensors = tuple(a[indices] for a in tensors)
         dataset = torch.utils.data.TensorDataset(*tensors)
-        return torch.utils.data.DataLoader(dataset, self.batch_size,
-                                           shuffle=train)
+        return torch.utils.data.DataLoader(dataset, self.batch_size, shuffle=train)
 
     def get_data(self):
         raise NotImplementedError
 
+
 @attrs.define()
 class SyntheticLinearData(LinearReLUMLPDataSet):
     """
-    
+
     Synthetic data for linear regression.
-    
+
     Useful for debugging
     """
 
@@ -56,7 +57,11 @@ class SyntheticLinearData(LinearReLUMLPDataSet):
         n = self.num_train + self.num_val
         self.X = torch.randn(n, len(self.weights))
         noise = torch.randn(n, 1) * self.noise_scale
-        self.y = torch.matmul(self.X, torch.reshape(self.weights, (-1, 1))) + self.bias + noise
+        self.y = (
+            torch.matmul(self.X, torch.reshape(self.weights, (-1, 1)))
+            + self.bias
+            + noise
+        )
 
     def get_dataloader(self, train: bool):
         i = slice(0, self.num_train) if train else slice(self.num_train, None)
@@ -67,6 +72,7 @@ class SyntheticLinearData(LinearReLUMLPDataSet):
 
     def val_dataloader(self):
         return self.get_dataloader(train=False)
+
 
 @attrs.define()
 class DiabetesDataset(LinearReLUMLPDataSet):
@@ -79,22 +85,30 @@ class DiabetesDataset(LinearReLUMLPDataSet):
 
     features = diabetes_dataset["data"]  # type: ignore
     labels = diabetes_dataset["target"]  # type: ignore
-    feature_names = diabetes_dataset["feature_names"] # type: ignore
-    
+    feature_names = diabetes_dataset["feature_names"]  # type: ignore
+
     def __attrs_post_init__(self):
-        self.features = self.features - self.features.mean(axis=0) / self.features.std(axis=0)
+        self.features = self.features - self.features.mean(axis=0) / self.features.std(
+            axis=0
+        )
         self.val_size_abs = int(len(self) * self.val_size)
 
     def __len__(self) -> int:
         return len(self.features)
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        return (torch.tensor(self.features[idx], dtype=torch.float), 
-                torch.tensor(self.labels[idx], dtype=torch.float))
+        return (
+            torch.tensor(self.features[idx], dtype=torch.float),
+            torch.tensor(self.labels[idx], dtype=torch.float),
+        )
 
     def get_dataloader(self, train):
         # Get the indices for the training and validation sets.
-        i = slice(0, int(len(self) - self.val_size)) if train else slice(int(len(self) - self.val_size), None)
+        i = (
+            slice(0, int(len(self) - self.val_size))
+            if train
+            else slice(int(len(self) - self.val_size), None)
+        )
         X = torch.tensor(self.features, dtype=torch.float32)
         y = torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1)
         return self.get_tensorloader((X, y), train, i)
@@ -110,7 +124,7 @@ class DiabetesDataset(LinearReLUMLPDataSet):
 class KaggleHouse(LinearReLUMLPDataSet):
 
     batch_size: int = 32
-    root = '../data'
+    root = "../data"
     train = None
     val = None
 
@@ -123,34 +137,40 @@ class KaggleHouse(LinearReLUMLPDataSet):
 
     def val_dataloader(self):
         return self.get_dataloader(train=False)
-    
+
     def get_dataloader(self, train: bool):
-        label = 'SalePrice'
+        label = "SalePrice"
         data = self.train if train else self.val
-        
+
         # Sanity check here
         assert data is not None
-        if label not in data: return
+        if label not in data:
+            return
 
-        get_tensor = lambda x: torch.tensor(x.values.astype(float),
-                                            dtype=torch.float32)
+        get_tensor = lambda x: torch.tensor(x.values.astype(float), dtype=torch.float32)
 
         # Logarithm of prices
-        tensors = (get_tensor(data.drop(columns=[label])), # X
-        torch.log(get_tensor(data[label])).reshape((-1, 1))) # Y
+        tensors = (
+            get_tensor(data.drop(columns=[label])),  # X
+            torch.log(get_tensor(data[label])).reshape((-1, 1)),
+        )  # Y
         return self.get_tensorloader(tensors, train)
 
-
     def preprocess(self):
-        #Remove the ID and label columns
-        label = 'SalePrice'
+        # Remove the ID and label columns
+        label = "SalePrice"
         features = pd.concat(
-            (self.raw_train.drop(columns=['Id', label]),
-            self.raw_val.drop(columns=['Id'])))
+            (
+                self.raw_train.drop(columns=["Id", label]),
+                self.raw_val.drop(columns=["Id"]),
+            )
+        )
 
         # Standardize numerical columns
-        numeric_features = features.dtypes[features.dtypes != 'object'].index
-        features[numeric_features] = features[numeric_features].apply(lambda x: (x - x.mean()) / (x.std()))
+        numeric_features = features.dtypes[features.dtypes != "object"].index
+        features[numeric_features] = features[numeric_features].apply(
+            lambda x: (x - x.mean()) / (x.std())
+        )
 
         # Replace NaN numerical features by 0.
         features[numeric_features] = features[numeric_features].fillna(0)
@@ -158,9 +178,8 @@ class KaggleHouse(LinearReLUMLPDataSet):
         # Get one-hot encoding
         features = pd.get_dummies(features, dummy_na=True)
 
-        self.train = features[:self.raw_train.shape[0]].copy()
+        self.train = features[: self.raw_train.shape[0]].copy()
         self.train[label] = self.raw_train[label]
 
-        # Validation starts when train ends. 
-        self.val = features[self.raw_train.shape[0]:].copy()
-
+        # Validation starts when train ends.
+        self.val = features[self.raw_train.shape[0] :].copy()

@@ -6,6 +6,7 @@ from pandas.core import frame
 from pandas.core.apply import FrameColumnApply
 from sklearn.metrics import r2_score, mean_squared_error
 
+
 def plot_correlations(correlations: pd.DataFrame, colormap: str = "seismic"):
     """
     Plots the result of calling pandas.DataFrame.corr() as a heatmap.
@@ -45,11 +46,12 @@ def plot_correlations(correlations: pd.DataFrame, colormap: str = "seismic"):
 
     return fig, ax
 
+
 def plot_two_feature_correlation(
     feature_1: pd.Series, feature_2: pd.Series, title: str = "Feature Correlation"
 ):
     """
-    Plot the correlation between two features. 
+    Plot the correlation between two features.
     """
 
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -63,14 +65,21 @@ def plot_two_feature_correlation(
     return fig, ax
 
 
-def plot_umap(umap_coords: np.ndarray, color_by: np.ndarray, colormap: str = "viridis", title: str = "UMAP"):
+def plot_umap(
+    umap_coords: np.ndarray,
+    color_by: np.ndarray,
+    colormap: str = "viridis",
+    title: str = "UMAP",
+):
     """
     Plot the UMAP embedding of the dataset.
     """
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    scatter = ax.scatter(umap_coords[:, 0], umap_coords[:, 1], c=color_by, cmap=colormap)
+    scatter = ax.scatter(
+        umap_coords[:, 0], umap_coords[:, 1], c=color_by, cmap=colormap
+    )
 
     ax.set_title(title)
 
@@ -80,12 +89,20 @@ def plot_umap(umap_coords: np.ndarray, color_by: np.ndarray, colormap: str = "vi
 
     return fig, ax
 
-def correlate_y_vs_yhat(y_hat: np.ndarray, y: np.ndarray, title="Correlation", xlabel="Actual", ylabel="Predicted", show_metrics=True):
+
+def correlate_y_vs_yhat(
+    y_hat: np.ndarray,
+    y: np.ndarray,
+    title="Correlation",
+    xlabel="Actual",
+    ylabel="Predicted",
+    show_metrics=True,
+):
 
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(5, 5))
 
-    ax.scatter(y, y_hat, alpha=0.6, label='Predicted')
-    ax.plot([y.min(), y.max()], [y.min(), y.max()], 'k--', lw=2)
+    ax.scatter(y, y_hat, alpha=0.6, label="Predicted")
+    ax.plot([y.min(), y.max()], [y.min(), y.max()], "k--", lw=2)
 
     ax.set_xlabel("Actual")
     ax.set_ylabel("Predicted")
@@ -97,15 +114,20 @@ def correlate_y_vs_yhat(y_hat: np.ndarray, y: np.ndarray, title="Correlation", x
 
     return fig, ax
 
-def plot_training_validation_loss(training_losses: np.ndarray, validation_losses: np.ndarray, title="Training and Validation Loss"):
+
+def plot_training_validation_loss(
+    training_losses: np.ndarray,
+    validation_losses: np.ndarray,
+    title="Training and Validation Loss",
+):
     """
     Plot the training and validation loss.
     """
 
     fig, ax = plt.subplots(figsize=(5, 5))
 
-    ax.plot(training_losses, marker='o', label="Training Loss")
-    ax.plot(validation_losses, marker='x', label="Validation Loss")
+    ax.plot(training_losses, marker="o", label="Training Loss")
+    ax.plot(validation_losses, marker="x", label="Validation Loss")
 
     ax.set_title(title)
     ax.set_xlabel("Epoch")

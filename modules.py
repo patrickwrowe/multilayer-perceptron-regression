@@ -4,6 +4,7 @@ from torch.nn import Module
 from torch import nn, optim
 from typing import Optional
 
+
 @attrs.define(eq=False)
 class LinearReLUMLP(Module):
 
@@ -19,7 +20,7 @@ class LinearReLUMLP(Module):
         net_arch = []
         for dim in self.mlp_arch:
             net_arch.extend([nn.LazyLinear(dim), nn.ReLU()])
-        net_arch.extend([nn.LazyLinear(1)]) # Output linear layer for regression
+        net_arch.extend([nn.LazyLinear(1)])  # Output linear layer for regression
 
         self.net = nn.Sequential(*nn.ModuleList(net_arch))
 
@@ -55,4 +56,3 @@ class LinearReLUMLP(Module):
         y_hat = self(*batch[:-1])
         l = self.loss(y_hat, batch[-1])
         return l
-

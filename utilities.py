@@ -3,7 +3,10 @@ from dataloader import LinearReLUMLPDataSet
 from trainer import Trainer
 import numpy as np
 
-def get_validation_predictions(model: Module, dataset: LinearReLUMLPDataSet) -> tuple[np.ndarray, np.ndarray]:
+
+def get_validation_predictions(
+    model: Module, dataset: LinearReLUMLPDataSet
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Get the predictions of the model on the validation dataset.
     """
@@ -15,6 +18,7 @@ def get_validation_predictions(model: Module, dataset: LinearReLUMLPDataSet) -> 
         y = np.append(y, batch[-1])
 
     return y_hat, y
+
 
 def extract_training_losses(metadata: dict) -> dict:
     """
@@ -53,5 +57,5 @@ def extract_training_losses(metadata: dict) -> dict:
         "train_losses": np.array(train_losses),
         "avg_train_losses": np.array(avg_train_losses),
         "val_losses": np.array(val_losses),
-        "avg_val_losses": np.array(avg_val_losses)
+        "avg_val_losses": np.array(avg_val_losses),
     }

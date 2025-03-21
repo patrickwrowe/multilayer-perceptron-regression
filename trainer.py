@@ -9,7 +9,7 @@ from torch.optim.optimizer import Optimizer
 
 
 @attrs.define(slots=False)
-class Trainer():
+class Trainer:
 
     max_epochs: int
 
@@ -23,7 +23,7 @@ class Trainer():
     num_train_batches: int = attrs.field(init=False)
     num_val_batches: int = attrs.field(init=False)
 
-    # Counters 
+    # Counters
     epoch: int = attrs.field(init=False)
     train_batch_idx: int = attrs.field(init=False)
     val_batch_idx: int = attrs.field(init=False)
@@ -35,14 +35,15 @@ class Trainer():
         self.train_dataloader = data.train_dataloader()
         self.val_dataloader = data.val_dataloader()
         self.num_train_batches = len(self.train_dataloader)
-        self.num_val_batches = (len(self.val_dataloader)
-                                if self.val_dataloader is not None else 0)
+        self.num_val_batches = (
+            len(self.val_dataloader) if self.val_dataloader is not None else 0
+        )
 
     def prepare_model(self, model):
         model.trainer = self
         # Attempt to put the model on the GPU if one is available
         device = try_gpu()
-        model.to(device) 
+        model.to(device)
         self.model = model
         print(f"Model running on {device}")
 
@@ -73,12 +74,11 @@ class Trainer():
         # Training loop
         for self.train_batch_idx, batch in enumerate(self.train_dataloader):
 
-            batch = self.prepare_batch(batch)  
+            batch = self.prepare_batch(batch)
 
             self.optim.zero_grad()  # Reset gradients
             loss = self.model.training_step(batch)  # Compute loss
             loss.backward()  # Backpropagation
-        
 
             self.optim.step()  # Update model parameters
             train_loss += loss.item()
@@ -92,7 +92,9 @@ class Trainer():
             val_loss = 0.0
             with torch.no_grad():  # Disable gradient computation for validation
                 for self.val_batch_idx, batch in enumerate(self.val_dataloader):
-                    batch = self.prepare_batch(batch)  # Move batch to the correct device
+                    batch = self.prepare_batch(
+                        batch
+                    )  # Move batch to the correct device
                     loss = self.model.validation_step(batch)  # Compute validation loss
                     val_loss += loss.item()
 
@@ -103,21 +105,24 @@ class Trainer():
             val_loss = None
 
         # Update metadata with training step information
-        self.metadata["training_epochs"].append({
-            "epoch": self.epoch,
-            "train_loss": train_loss,
-            "val_loss": val_loss,
-            "avg_train_loss": avg_train_loss,
-            "avg_val_loss": avg_val_loss
-        })
+        self.metadata["training_epochs"].append(
+            {
+                "epoch": self.epoch,
+                "train_loss": train_loss,
+                "val_loss": val_loss,
+                "avg_train_loss": avg_train_loss,
+                "avg_val_loss": avg_val_loss,
+            }
+        )
 
     def prepare_batch(self, batch):
         # Try sending the batch to the GPU if possible
         batch = [b.to(try_gpu()) for b in batch]
         return batch
 
+
 def try_gpu():
     """Return gpu if exists, otherwise return cpu"""
     if torch.cuda.device_count() >= 1:
-        return torch.device('cuda')
-    return torch.device('cpu')
+        return torch.device("cuda")
+    return torch.device("cpu")

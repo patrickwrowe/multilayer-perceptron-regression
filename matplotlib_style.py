@@ -14,12 +14,12 @@ theme_categorical_bright: list = [
     "#E14B4B",  # Red
     "#E1964B",  # Orange
     "#ca4be1",  # Purple
-    "#4b62e1",  # Blue 
+    "#4b62e1",  # Blue
     "#2fb0dc",  # Cyan
     "#3cda8c",  # Aqua
     "#edc81e",  # Yellow
     "#a66e58",  # Brown
-]  
+]
 
 theme_categorical_pastel: list = [
     "#95D0A9",  # Light Green
@@ -72,9 +72,8 @@ def setup_matplotlib_environment() -> None:
 
     # Line Colours
     plt.rcParams["axes.prop_cycle"] = plt.cycler(  # type: ignore
-        "color", 
-        theme_categorical_bright
-    ) 
+        "color", theme_categorical_bright
+    )
 
     # Markers
     plt.rcParams["lines.markersize"] = 5
@@ -83,5 +82,5 @@ def setup_matplotlib_environment() -> None:
     # Legend
     plt.rcParams["legend.handlelength"] = 3.0
 
-    # use svg 
-    backend_inline.set_matplotlib_formats('svg')
+    # use svg
+    backend_inline.set_matplotlib_formats("svg")
