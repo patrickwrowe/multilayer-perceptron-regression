@@ -1,17 +1,10 @@
 from sklearn.datasets import load_diabetes
 from torch.utils.data import Dataset
 import torch
-from torch import tensor, utils
 import torch.utils.data
 import attrs
 import pandas as pd
-
-
-import requests
 import os
-import hashlib
-import zipfile
-import tarfile
 
 
 @attrs.define()
@@ -30,6 +23,7 @@ class DiabetesDataset(Dataset):
     
     def __attrs_post_init__(self):
         self.features = self.features - self.features.mean(axis=0) / self.features.std(axis=0)
+        self.val_size_abs = int(len(self) * self.val_size)
 
     def __len__(self) -> int:
         return len(self.features)
@@ -39,7 +33,8 @@ class DiabetesDataset(Dataset):
                 torch.tensor(self.labels[idx], dtype=torch.float))
 
     def get_dataloader(self, train):
-        i = slice(0, 350) if train else slice(350, None)
+        # Get the indices for the training and validation sets, not shuffling for now.
+        i = slice(0, len(self) - self.val_size) if train else slice(len(self) - self.val_size, None)
         X = torch.tensor(self.features, dtype=torch.float32)
         y = torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1)
         return self.get_tensorloader((X, y), train, i)
