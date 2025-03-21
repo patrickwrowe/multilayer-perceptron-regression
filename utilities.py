@@ -21,7 +21,6 @@ def get_model_predictions(
 
     return y_hat, y
 
-
 def extract_training_losses(metadata: dict) -> dict:
     """
     Extract the training and validation losses from the metadata dictionary. Of the training.Trainer class.

@@ -161,9 +161,9 @@ class DiabetesDataset(LinearReLUMLPDataSet):
     def get_dataloader(self, train):
         # Get the indices for the training and validation sets.
         i = (
-            slice(0, int(len(self) - self.val_size))
+            slice(0, int(len(self) - self.val_size_abs))
             if train
-            else slice(int(len(self) - self.val_size), None)
+            else slice(int(len(self) - self.val_size_abs), None)
         )
         return self.get_tensorloader(train, i)
 
