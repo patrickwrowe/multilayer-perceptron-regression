@@ -105,8 +105,8 @@ class KaggleHouse(Dataset):
         self.val = val
 
         if self.train is None:
-            self.raw_train = pd.read_csv("./data/kaggle_house_train.csv")
-            self.raw_val = pd.read_csv("./data/kaggle_house_test.csv")
+            self.raw_train = pd.read_csv(os.path.join(self.root, "kaggle_house_train.csv"))
+            self.raw_val = pd.read_csv(os.path.join(self.root, "kaggle_house_test.csv"))
 
     def train_dataloader(self):
         return self.get_dataloader(train=True)
