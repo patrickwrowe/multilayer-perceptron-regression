@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-from pandas.core import frame
-from pandas.core.apply import FrameColumnApply
 from sklearn.metrics import r2_score, mean_squared_error
 
 

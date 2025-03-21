@@ -1,8 +1,6 @@
-import torch
 import attrs
 from torch.nn import Module
 from torch import nn, optim
-from typing import Optional
 
 
 @attrs.define(eq=False)
