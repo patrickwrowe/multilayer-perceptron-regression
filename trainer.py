@@ -4,11 +4,14 @@ from torch.utils.data import DataLoader
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 import numpy as np
+from typing import Optional
 
 @attrs.define(slots=False)
 class Trainer:
 
+    # Training Options
     max_epochs: int
+    init_random: Optional[int] = None
 
     # Model paramaters
     model: Module = attrs.field(init=False)
@@ -28,6 +31,11 @@ class Trainer:
     # Metadata
     metadata: dict = {}
 
+    def prepare_state(self):
+        if self.init_random:
+            torch.manual_seed(self.init_random)
+            torch.use_deterministic_algorithms(True)
+
     def prepare_data(self, data):
         self.train_dataloader = data.train_dataloader()
         self.val_dataloader = data.val_dataloader()
@@ -45,6 +53,7 @@ class Trainer:
         print(f"Model running on {device}")
 
     def fit(self, model, data):
+        self.prepare_state()
         self.prepare_data(data)
         self.prepare_model(model)
         self.optim = model.configure_optimizers()
@@ -58,6 +67,7 @@ class Trainer:
             "num_val_batches": self.num_val_batches,
             "training_epochs": [],
         }
+        
         for self.epoch in range(self.max_epochs):
             self.fit_epoch()
 
@@ -124,7 +134,8 @@ class Trainer:
         val_loss = self.metadata["training_epochs"][-1]["avg_val_loss"] 
         val_loss = val_loss if val_loss is not None else np.NaN
 
-        print(f"Epoch {self.epoch + 1}/{self.max_epochs}: Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}", end="\r")
+        end = "\n" if self.epoch == self.max_epochs -1 else "\r"  # Carriage return unless last epoch
+        print(f"Epoch {self.epoch + 1}/{self.max_epochs}: Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}", end=end)
 
 
 def try_gpu():

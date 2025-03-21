@@ -1,12 +1,13 @@
-from pandas.compat import F
-from scipy.sparse import data
+
 from sklearn.datasets import load_diabetes
-from torch.utils.data import Dataset, dataset
+from torch.utils.data import Dataset
 import torch
 import torch.utils.data
+from torch.utils.data import DataLoader, Dataset, Subset
 import attrs
 import pandas as pd
 import os
+from typing import Union
 
 
 @attrs.define()
@@ -21,6 +22,9 @@ class LinearReLUMLPDataSet(Dataset):
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError
 
+    def get_tensors(self):
+        raise NotImplementedError
+
     def get_dataloader(self, train: bool):
         raise NotImplementedError
 
@@ -30,8 +34,8 @@ class LinearReLUMLPDataSet(Dataset):
     def val_dataloader(self):
         return self.get_dataloader(train=False)
 
-    def get_tensorloader(self, tensors, train, indices=slice(0, None)):
-        tensors = tuple(a[indices] for a in tensors)
+    def get_tensorloader(self, train, indices: Union[list[int], slice]=slice(0, None)):
+        tensors = tuple(a[indices] for a in self.get_tensors())
         dataset = torch.utils.data.TensorDataset(*tensors)
         return torch.utils.data.DataLoader(dataset, self.batch_size, shuffle=train)
 
@@ -39,39 +43,46 @@ class LinearReLUMLPDataSet(Dataset):
         raise NotImplementedError
 
 @attrs.define()
-class KFoldDataSet(Dataset):
+class KFoldDataSet(LinearReLUMLPDataSet):
     """Dataset for K-Fold Cross Validation. Takes the train_dataloader of the parent
-    dataset and splits it into k folds"""
+    dataset and splits it into k folds
+    
+    After writing this I learned about PyTorch Samplers, which is probably a _much_
+    better way to do implement this: https://pytorch.org/docs/stable/data.html#torch.utils.data.Sampler
+    
+    But hey-ho, this is just a learning project, so we'll use my hacky implementation."""
 
-    dataset: LinearReLUMLPDataSet
-    train_subset: torch.utils.data.Subset
-    val_subset: torch.utils.data.Subset
+    train_subset_dataloader: torch.utils.data.DataLoader
+    val_subset_dataloader: torch.utils.data.DataLoader
     k: int
     n: int
 
     @classmethod
     def from_dataset(cls, dataset: LinearReLUMLPDataSet, k: int, n: int):
-        def get_indices(k: int, n: int, train=True):      
+        def get_indices(length: int, k: int, n: int, train=True):      
             assert n <= k, "n must be less than or equal to k to fetch nth fold of a k-fold split."
 
-            fold_size = len(dataset) // k
-            all_indices = list(range(len(dataset)))
+            fold_size = length // k
+            all_indices = list(range(length))
             
-            if train:
-                indices = all_indices[0 : n * fold_size] + all_indices[(n+1) * fold_size : -1]
-            else: 
-                indices = all_indices[n * fold_size : (n+1) * fold_size]
-            
+            indices = all_indices[0 : n * fold_size] + all_indices[(n+1) * fold_size : -1] if train else all_indices[n * fold_size : (n+1) * fold_size]
             return indices
 
-        train_subset = torch.utils.data.Subset(dataset, indices=get_indices(k=k, n=n, train=True)) 
-        val_subset = torch.utils.data.Subset(dataset, indices=get_indices(k=k, n=n, train=False))
+        # This is a horrible way to get the total length of the training dataloader. So ineffient.
+        train_length = sum(len(batch[0]) for batch in dataset.train_dataloader())
+        train_subset = dataset.get_tensorloader(
+            train=True,
+            indices=get_indices(train_length, k=k, n=n, train=True)
+        )
+        val_subset = dataset.get_tensorloader(
+            train=False, 
+            indices=get_indices(train_length, k=k, n=n, train=False)
+        )
 
-        return cls(dataset=dataset, train_subset=train_subset, val_subset=val_subset, k=k, n=n)
+        return cls(batch_size=dataset.batch_size, train_subset_dataloader=train_subset, val_subset_dataloader=val_subset, k=k, n=n)
 
     def get_dataloader(self, train):
-        dataloader = self.train_subset if train else self.val_subset
-        return dataloader
+        return self.train_subset_dataloader if train else self.val_subset_dataloader
 
 
 @attrs.define()
@@ -102,7 +113,10 @@ class SyntheticLinearData(LinearReLUMLPDataSet):
 
     def get_dataloader(self, train: bool):
         i = slice(0, self.num_train) if train else slice(self.num_train, None)
-        return self.get_tensorloader((self.X, self.y), train, i)
+        return self.get_tensorloader(train, i)
+
+    def get_tensors(self):
+        return self.X, self.y
 
     def train_dataloader(self):
         return self.get_dataloader(train=True)
@@ -139,6 +153,11 @@ class DiabetesDataset(LinearReLUMLPDataSet):
             torch.tensor(self.labels[idx], dtype=torch.float),
         )
 
+    def get_tensors(self):
+        X = torch.tensor(self.features, dtype=torch.float32)
+        y = torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1)
+        return X, y
+
     def get_dataloader(self, train):
         # Get the indices for the training and validation sets.
         i = (
@@ -146,9 +165,7 @@ class DiabetesDataset(LinearReLUMLPDataSet):
             if train
             else slice(int(len(self) - self.val_size), None)
         )
-        X = torch.tensor(self.features, dtype=torch.float32)
-        y = torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1)
-        return self.get_tensorloader((X, y), train, i)
+        return self.get_tensorloader(train, i)
 
     def train_dataloader(self):
         return self.get_dataloader(train=True)
@@ -169,29 +186,22 @@ class KaggleHouse(LinearReLUMLPDataSet):
         self.raw_train = pd.read_csv(os.path.join(self.root, "kaggle_house_train.csv"))
         self.raw_val = pd.read_csv(os.path.join(self.root, "kaggle_house_test.csv"))
 
-    def train_dataloader(self):
-        return self.get_dataloader(train=True)
-
     def val_dataloader(self):
         return self.get_dataloader(train=False)
 
     def get_dataloader(self, train: bool):
-        label = "SalePrice"
-        data = self.train if train else self.val
-
-        # Sanity check here
-        assert data is not None
-        if label not in data:
+        if train: 
+            return self.get_tensorloader(train)
+        else:
             return
 
+    def get_tensors(self):
+        label = "SalePrice"
         get_tensor = lambda x: torch.tensor(x.values.astype(float), dtype=torch.float32)
-
-        # Logarithm of prices
-        tensors = (
-            get_tensor(data.drop(columns=[label])),  # X
-            torch.log(get_tensor(data[label])).reshape((-1, 1)), # Y
-        )  
-        return self.get_tensorloader(tensors, train)
+        assert self.train is not None
+        X = get_tensor(self.train.drop(columns=[label]))  # X
+        y = torch.log(get_tensor(self.train[label])).reshape((-1, 1)) # Y
+        return X, y
 
     def preprocess(self):
         # Remove the ID and label columns
