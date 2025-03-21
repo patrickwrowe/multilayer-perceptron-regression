@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+from pandas.core import frame
+from pandas.core.apply import FrameColumnApply
+from sklearn.metrics import r2_score, mean_squared_error
+
 def plot_correlations(correlations: pd.DataFrame, colormap: str = "seismic"):
     """
     Plots the result of calling pandas.DataFrame.corr() as a heatmap.
@@ -76,5 +80,36 @@ def plot_umap(umap_coords: np.ndarray, color_by: np.ndarray, colormap: str = "vi
 
     return fig, ax
 
+def correlate_y_vs_yhat(y_hat: np.ndarray, y: np.ndarray, title="Correlation", xlabel="Actual", ylabel="Predicted", show_metrics=True):
 
-    
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(5, 5))
+
+    ax.scatter(y, y_hat, alpha=0.6, label='Predicted')
+    ax.plot([y.min(), y.max()], [y.min(), y.max()], 'k--', lw=2)
+
+    ax.set_xlabel("Actual")
+    ax.set_ylabel("Predicted")
+
+    if show_metrics:
+        r2 = r2_score(y, y_hat)
+        mse = mean_squared_error(y, y_hat)
+        ax.set_title(f"{title}\nR2: {r2:.2f}, MSE: {mse:.2f}")
+
+    return fig, ax
+
+def plot_training_validation_loss(training_losses: np.ndarray, validation_losses: np.ndarray, title="Training and Validation Loss"):
+    """
+    Plot the training and validation loss.
+    """
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+
+    ax.plot(training_losses, marker='o', label="Training Loss")
+    ax.plot(validation_losses, marker='x', label="Validation Loss")
+
+    ax.set_title(title)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.legend(frameon=False)
+
+    return fig, ax

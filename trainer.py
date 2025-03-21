@@ -28,6 +28,9 @@ class Trainer():
     train_batch_idx: int = attrs.field(init=False)
     val_batch_idx: int = attrs.field(init=False)
 
+    # Metadata
+    metadata: dict = {}
+
     def prepare_data(self, data):
         self.train_dataloader = data.train_dataloader()
         self.val_dataloader = data.val_dataloader()
@@ -50,12 +53,19 @@ class Trainer():
         self.epoch = 0
         self.train_batch_idx = 0
         self.val_batch_idx = 0
+
+        self.metadata = {
+            "max_epochs": self.max_epochs,
+            "num_train_batches": self.num_train_batches,
+            "num_val_batches": self.num_val_batches,
+            "training_epochs": [],
+        }
         for self.epoch in range(self.max_epochs):
             self.fit_epoch()
 
     def fit_epoch(self):
         """Fit one epoch of the model."""
-        print("\n EPOCH \n")
+        # print("\n EPOCH \n")
 
         self.model.train()  # Set the model to training mode
         train_loss = 0.0
@@ -63,21 +73,18 @@ class Trainer():
         # Training loop
         for self.train_batch_idx, batch in enumerate(self.train_dataloader):
 
-            batch = self.prepare_batch(batch)  # Move batch to the correct device
+            batch = self.prepare_batch(batch)  
 
             self.optim.zero_grad()  # Reset gradients
             loss = self.model.training_step(batch)  # Compute loss
             loss.backward()  # Backpropagation
-            
-            # # Print the gradients 
-            # for name, param in self.model.named_parameters():
-            #     print(name, param.grad)
+        
 
             self.optim.step()  # Update model parameters
             train_loss += loss.item()
 
         avg_train_loss = train_loss / self.num_train_batches
-        print(f"Epoch {self.epoch + 1}/{self.max_epochs}, Training Loss: {avg_train_loss:.4f}")
+        # print(f"Epoch {self.epoch + 1}/{self.max_epochs}, Training Loss: {avg_train_loss:.4f}")
 
         # Validation loop
         if self.num_val_batches > 0:
@@ -90,7 +97,19 @@ class Trainer():
                     val_loss += loss.item()
 
             avg_val_loss = val_loss / self.num_val_batches
-            print(f"Epoch {self.epoch + 1}/{self.max_epochs}, Validation Loss: {avg_val_loss:.4f}")
+            # print(f"Epoch {self.epoch + 1}/{self.max_epochs}, Validation Loss: {avg_val_loss:.4f}")
+        else:
+            avg_val_loss = None
+            val_loss = None
+
+        # Update metadata with training step information
+        self.metadata["training_epochs"].append({
+            "epoch": self.epoch,
+            "train_loss": train_loss,
+            "val_loss": val_loss,
+            "avg_train_loss": avg_train_loss,
+            "avg_val_loss": avg_val_loss
+        })
 
     def prepare_batch(self, batch):
         # Try sending the batch to the GPU if possible

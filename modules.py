@@ -10,6 +10,7 @@ class LinearReLUMLP(Module):
     # A list of integers specifying the dimensions of the hidden layers
     mlp_arch: list[int]
     learning_rate: float = 0.1
+    weight_decay: float = 0.01
 
     def __attrs_post_init__(self):
         super().__init__()
@@ -34,9 +35,7 @@ class LinearReLUMLP(Module):
         return loss_function(y_hat, y)
 
     def configure_optimizers(self):
-        # return optim.SGD(self.parameters(), lr=self.learning_rate, weight_decay=0.01)
-
-        return optim.Adam(self.parameters(), lr=self.learning_rate)
+        return optim.SGD(self.parameters(), lr=self.learning_rate, weight_decay=0.01)
 
     def initialize_parameters(self, module):
 
