@@ -125,7 +125,9 @@ def plot_training_validation_loss(
     fig, ax = plt.subplots(figsize=(5, 5))
 
     ax.plot(training_losses, marker="o", label="Training Loss")
-    ax.plot(validation_losses, marker="x", label="Validation Loss")
+
+    if validation_losses.any():
+        ax.plot(validation_losses, marker="x", label="Validation Loss")
 
     ax.set_title(title)
     ax.set_xlabel("Epoch")
