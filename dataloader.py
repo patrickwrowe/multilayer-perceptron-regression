@@ -155,7 +155,7 @@ class DiabetesDataset(LinearReLUMLPDataSet):
 
     def get_tensors(self):
         X = torch.tensor(self.features, dtype=torch.float32)
-        y = torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1)
+        y = torch.log(torch.tensor(self.labels, dtype=torch.float32).reshape(-1, 1))
         return X, y
 
     def get_dataloader(self, train):

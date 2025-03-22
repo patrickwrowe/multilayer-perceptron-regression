@@ -89,13 +89,14 @@ def plot_umap(
 
 
 def correlate_y_vs_yhat(
-    y_hat: np.ndarray,
     y: np.ndarray,
+    y_hat: np.ndarray,
     title="Correlation",
-    xlabel="Actual",
-    ylabel="Predicted",
     show_metrics=True,
 ):
+
+    r2 = r2_score(y, y_hat)
+    mse = mean_squared_error(y, y_hat)
 
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(5, 5))
 
@@ -106,9 +107,9 @@ def correlate_y_vs_yhat(
     ax.set_ylabel("Predicted")
 
     if show_metrics:
-        r2 = r2_score(y, y_hat)
-        mse = mean_squared_error(y, y_hat)
         ax.set_title(f"{title}\nR2: {r2:.2f}, MSE: {mse:.2f}")
+
+    ax.set_box_aspect(1)
 
     return fig, ax
 
