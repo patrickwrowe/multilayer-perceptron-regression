@@ -175,7 +175,7 @@ class DiabetesDataset(LinearReLUMLPDataSet):
 
 
 @attrs.define()
-class KaggleHouse(LinearReLUMLPDataSet):
+class AmesHouse(LinearReLUMLPDataSet):
 
     batch_size: int = 32
     root = "../data"
