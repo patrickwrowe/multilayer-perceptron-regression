@@ -8,6 +8,15 @@ def get_model_predictions(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Get the predictions of the model on the validation dataset.
+
+    Args:
+        model: The model to make predictions with.
+        dataset: The dataset to make predictions on.
+        train: Whether to use the training or validation dataset.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: The true and predicted
+        values of the dataset.
     """
 
     data = dataset.train_dataloader() if train else dataset.val_dataloader()
@@ -19,7 +28,7 @@ def get_model_predictions(
         y_hat = np.append(y_hat, model.net(batch[0]).detach().numpy())
         y = np.append(y, batch[-1])
 
-    return y_hat, y
+    return y, y_hat
 
 def extract_training_losses(metadata: dict) -> dict:
     """
